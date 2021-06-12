@@ -1,0 +1,66 @@
+---
+# tasks file for php_fpm_deb
+- name: Install PHP {{php_version}} PPA Repo
+  apt_repository:
+   repo: 'ppa:ondrej/php'
+  tags:
+    - php
+
+- name: Install PHP {{php_version}}
+  apt: 
+    name: "php{{php_version}}"
+    state: latest
+  tags:
+    - php      
+  
+- name: Install PHP packages
+  become: true
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - "php{{php_version}}-curl"
+    - "php{{php_version}}-fpm"
+    - "php{{php_version}}-intl"
+    - "php{{php_version}}-mysql"
+    - "php{{php_version}}-xml"
+    - "php{{php_version}}-mbstring"
+  tags:
+    - php          
+  notify: Restart PHP-FPM
+
+- name: Disable socket lsiten
+  become: true
+  lineinfile:
+    dest: /etc/php/7.4/fpm/pool.d/www.conf
+    state: present
+    regexp: '^listen = /run/php/php7.4-fpm.sock'
+    line: ';listen = /run/php/php7.4-fpm.sock'
+  tags:
+    - php
+
+- name: Enable port listen
+  become: true
+  lineinfile:
+    dest: /etc/php/7.4/fpm/pool.d/www.conf
+    insertafter: '^;?listen = /run/php/php7.4-fpm.sock'
+    line: 'listen = 9000'
+  tags:
+    - php
+  notify: Restart PHP-FPM
+
+- name: Create root directory
+  file:
+    path: "{{ document_root }}/{{ app_root }}"
+    state: directory
+    mode: 0755
+  tags:
+    - php
+
+- name: Copy website files to the server's document root
+  template:
+    src: index.php.j2
+    dest: "{{ document_root }}/{{ app_root }}/index.php"
+    mode: preserve
+  tags:
+    - php  

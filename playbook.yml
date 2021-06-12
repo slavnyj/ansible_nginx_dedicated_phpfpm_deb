@@ -1,0 +1,22 @@
+---
+- hosts: nginx 
+  become: yes
+  vars_files:
+    - ./group_vars/vars.yml
+  vars:
+    users:
+      - lucy 
+  roles:
+    - users     
+    - http 
+
+- hosts: php
+  become: yes
+  vars_files:
+    - ./group_vars/vars.yml
+  vars:
+    users:
+      - strelka
+  roles:
+    - users
+    - php
